@@ -3,13 +3,13 @@
 ## Attribution
 
 This code is free to use and modify, but you shoud cite
-Ragozzine et al. (2020), PASP, submitted. 
-if you use it. Reading through that paper is strongly recommended before use.
+Ragozzine et al. (2020), PASP, submitted 
+which is included in the doc directory if you use PhoDyMM. Reading through that paper is strongly recommended before use.
 The vast majority of the original code was developed by Sean Mills with support from Daniel Fabrycky. Darin Ragozzine and his group augmented the code and currently maintain it. 
 
 ## Requirements
 
-PhoDyMM is written in C and is designed to be executed on UNIX/Linux machines using a Bash shell. 
+PhoDyMM is written in C and is designed to be executed on UNIX/Linux machines using a Bash shell. Valuable analysis tools require python. 
 
 This code requires: 
 
@@ -25,7 +25,7 @@ If you are using the demcmc rather than just running the forward model, it also 
 
 ## Running the model
 
-After those are installed, you may compile Phodymm from source using:
+After those are installed, you may compile PhoDyMM from source file src/phodymm.cpp using:
 ```
 $ g++ -w -O3 -o lcout -I/yourpathto/celerite/cpp/include -I/yourpathto/celerite/cpp/lib/eigen_3.3.3 -lm -lgsl -lgslcblas -fpermissive phodymm.cpp
 ```
@@ -43,7 +43,7 @@ The `-lm` `-lgsl` and `-lgslcblas` flags should link the compiler to your math l
 This generates an executable called `lcout` (short for light-curve output).
 You may use it to run a forward N-body model given a data file, input file (*.in), and initial conditions (*.pldin) file. These files are described below.
 The output will be a theoretical lightcurve (in *.lcout) and list of transit times (in tbv*.out for each planet). These files are described below.
-For an example, see the readme.txt in `example_planets/Kepler-36`
+For an example, see the readme.txt in `runs/Kepler-36`
 
 ## Fitting to Data to Generate Posteriors
 
@@ -64,12 +64,40 @@ $ mpic++ -w -Ofast -o demcmc -lm -lgsl -lgslcblas -lmpi -fpermissive phodymm.cpp
 ```
 
 This will create an executable called `demcmc` which can be used to run a differential evolution MCMC (DEMCMC). 
-It is recommended you run the demcmc executable on a computing cluster. Some example scripts to run the DEMCMC are included in 
-`example_planets/Kepler-36`
-Input and output files are discussed below. For more details look at the readme.txt in that folder.  
 
 In general, compiled files and bash scripts may need to have executable permissions set using chmod u+x
 
+It is recommended you run the demcmc executable on a computing cluster. Some example scripts to run the DEMCMC are included in 
+`runs/Kepler-36`
+Input and output files are discussed below. For more details look at the readme.txt in that folder.  
+
+## Step-by-step Instructions
+
+Here are some step-by-step instructions for novice users that also function as a test case. 
+
+1. Clone this repository to your local machine using
+``` 
+git clone https://github.com/dragozzine/PhoDyMM.git
+```
+
+2. Go into the src directory and compile lcout and demcmc
+
+3. Go into the runs/Kepler-36 directory and make all scripts executable (if not already):
+```
+chmod u+x *.sh
+```
+
+4. Examine the lightcurve model using this script:
+```
+./lightcurve_runscript.sh
+```
+This should take about 10 seconds and produce multiple output figures. 
+
+5. Do a short test DEMCMC run using this script:
+```
+./demcmc_runscript.sh
+```
+You can observe the progress of this DEMCMC run using ```tail demcmc.stdout```.
 
 ## Appendix
 
@@ -81,11 +109,13 @@ The units used internally are AU and days. Generally all quantities should be gi
 
 ### Input Files
 
-1. DATA FILE  
+1. PHOTOMETRY DATA FILE  
 
-   PhoDyMM is designed to for use on detrended Kepler lightcurves. See kepler_detrend for code to produce these lightcurves automatically. 
+   PhoDyMM is designed to for use on detrended Kepler lightcurves. See kepler_detrend for code to produce these lightcurves automatically. Examples 
+in the runs directories have data files, though these may need to be unpacked (using tar -xvzf filename.gz). Any detrended lightcurve will work -- see 
+runs/K2-19 for an example from K2 -- but many of the defaults only make sense for Kepler. 
 
-   The file with the list of input times (e.g., example_planets/Kepler-36/kplr011401755_1440_1.txt) must have the following format:
+   The file with the list of input times (e.g., runs/Kepler-36/kplr011401755_1440_1.txt) must have the following format:
    ```
    [Line Index] \t [Time (days)] \t [Ignored] \t [Ignored] \t [Flux] \t [Flux Error]
    ```
@@ -97,14 +127,17 @@ The units used internally are AU and days. Generally all quantities should be gi
    ```
    [long int] \t [double] \t [numeric] \t [numeric] \t [double] \t [double]
    ```
-   The 1st, 3rd, and 4th columns are currently ignored, but must be present. They represent the data point index from Kepler and the raw/un-normalized flux and uncertainty values. If short and long cadence data are used simultanously, the data file must also contain an additional column indicating the cadence of each point. The column should be of type int and is simply a 1 if the point is long cadence, and 0 if it is short cadence.  
+   The 1st, 3rd, and 4th columns are currently ignored, but must be present. They represent the data point index from Kepler and the 
+raw/un-normalized flux and uncertainty values. If short and long cadence data are used simultanously, the data file must also contain an additional 
+column indicating the cadence of each point. The column should be of type int and is simply a 1 if the point is long cadence, and 0 if it is short 
+cadence.
    
-   If only a forward model is being computed, then only the Time column (and cadence if present) are used.  
+   If only a forward model is being computed, then only the Time column (and cadence if present) are used.
    
 
 2. INPUT FILE  
 
-   This file (*.in) specifies various parameters necessary for completing the fit (e.g., example_planets/Kepler-36/kepler36_longcadence.in). Examples 
+   This file (*.in) specifies various parameters necessary for completing the fit (e.g., runs/Kepler-36/kepler36_longcadence.in). Examples 
 of paramters to edit in this file include the name of the run, the location of the data file, the fitting basis, which parameters to let vary or keep 
 fixed, and priors. This file is read in by the C code and must be in the exact format as the example. Commented lines must be retained.
 
@@ -120,7 +153,7 @@ declartion in the format:
 
 3. INITIAL CONDITIONS  
 
-   The starting state of the planetary system at the epoch specified in the input file must be provided by the user and is called the initial condition file (e.g., example_planets/Kepler-36/k36.pldin).  
+   The starting state of the planetary system at the epoch specified in the input file must be provided by the user and is called the initial condition file (e.g., runs/Kepler-36/k36.pldin).  
    
    The format of this file is first a line which is ignored describing the column names. The first column is the planet name, the last the planetary radius in units of stellar radius, and the second to last the planetary mass in Jupiter masses. The other columns depend on the choice of input parameter basis selected in the input file (by the xyzflag variable).   
    ```
@@ -138,7 +171,7 @@ declartion in the format:
    [c_2 quadratic limb darkening term]
    [dilution: the fraction of the flux in the system not from the star which the planets are transiting]
    ```
-   Several optional rows follow, depending on what fitting is being done. For instance, celerite GP fits require the 4 celerite terms (one per row). RV fits can include an RV jitter term for each set of observations (1 per line), etc. For more details refer to the example_planets and input file. Extra lines at the end of this file are ignored.  
+   Several optional rows follow, depending on what fitting is being done. For instance, celerite GP fits require the 4 celerite terms (one per row). RV fits can include an RV jitter term for each set of observations (1 per line), etc. For more details refer to the runs and input file. Extra lines at the end of this file are ignored.  
    
    Typically, the xyzflag in the input file is set to 0, and the basis for the initial condition is specified as:
    ```
@@ -152,7 +185,7 @@ declartion in the format:
    ```
    [Planet Label] \t  [x] \t [y] \t [z] \t [v_x] \t [v_y] \t [v_z] \t [Mass] \t [Rp/Rstar]
    ```
-   where the units are AU and AU/day. If any of these options are selected, xyzlist must be set to 1 for each planet. An example of usage with a cartesian coordinate style initial conditions instead of the usual orbital elements is found in `example_planets/Kepler-18/` indicated with filenames containing `cartesian`. 
+   where the units are AU and AU/day. If any of these options are selected, xyzlist must be set to 1 for each planet. An example of usage with a cartesian coordinate style initial conditions instead of the usual orbital elements is found in `runs/Kepler-18/` indicated with filenames containing `cartesian`. 
 
    You can also choose xyzflag= 5 or xyzflag= 6 to enter elements in a-e-i basis:
    ```
@@ -175,12 +208,12 @@ declartion in the format:
    ```
    The time series must have the same 0 point as the flux time. The telescope number is an integer index starting from 0 indentify each unique telescope used for observations. This information is used to determine different constant RV offsets for different telescopes, and allows for different RV jitters for different telescopes. 
 
-   See `example_planets/Kepler-15` or `example_planets/Kepler-18` for example RV data usage. 
+   See `runs/Kepler-15` or `runs/Kepler-18` for example RV data usage. 
 
 
 5. [Optional, `demcmc` only] Restart Files
 
-   If a demcmc run is stopped it may be resumed from the last recorded generation by passing `demcmc` additional arguments that specify the location of "restart files." These files include the current state of the MCMC chain, current MCMC scaling factor, and the best-fit solution found so far. These files can be generated from the ends of the MCMC output files #1-3 as described below. An example script to automatically generate them correctly is included in `example_planets/restart_script/restart.sh`. It should be copied to the directory where the MCMC was run, and then invoked with 
+   If a demcmc run is stopped it may be resumed from the last recorded generation by passing `demcmc` additional arguments that specify the location of "restart files." These files include the current state of the MCMC chain, current MCMC scaling factor, and the best-fit solution found so far. These files can be generated from the ends of the MCMC output files #1-3 as described below. An example script to automatically generate them correctly is included in `runs/restart_script/restart.sh`. It should be copied to the directory where the MCMC was run, and then invoked with 
    ```
    ./restart.sh demcmc_runscript.sh NAME.in
    ``` 
@@ -254,12 +287,12 @@ Note: Most of the output files append to existing files! instead of overwriting 
 
 ## Example Systems
 
-Example data files, setup scripts, etc., are included in example_planets
+Example data files, setup scripts, etc., are included in /runs
 
 
 ## Analysis Tools
 
-Simple plotting and analysis tools written in Python are available in `example_planets/analysis_tools`. These tools require the `numpy`, `pandas`, `matplotlib`, and `corner` packages.
+Simple plotting and analysis tools written in Python are available in `/src/tools`. These tools require the `numpy`, `pandas`, `matplotlib`, `corner` and possibly other packages. They are designed for use with python 3.5. 
 
 1. Forward Model Plotting
 
@@ -267,7 +300,7 @@ Simple plotting and analysis tools written in Python are available in `example_p
    ```
    $ python scriptname.py
    ```
-   *  `lcplot.py` - This script plots a segment of the lightcurve. It overplots the model and the data, and includes the residuals of the fit at the bottom. The modeled location of each planet is indicated at the top of the figure in a unique color. To change the range of the data plotted, the first line of the script may be edited. The script produces a figures titled 'lcplot.png.'
+   * `lcplot.py` - This script plots a segment of the lightcurve. It overplots the model and the data, and includes the residuals of the fit at the bottom. The modeled location of each planet is indicated at the top of the figure in a unique color. To change the range of the data plotted, the first line of the script may be edited. The script produces a figures titled 'lcplot.png.' A "gp" version can be used that includes the Guassian Process model from celerite.
 
    * `omc.py` - This script computes the mean period of the planets over the data range by performing a linear fit to the model's transit times. The difference between the modeled transit times and this constant linear ephemeris (period) is known as an O-C (Observed minus calculated) TTV diagram. The O-C for each planet is shown in the outputted figures 'omc_AA_BB.png', where AA indicates the body being transited (the star = 00 in most cases) and BB is the planet index (01 for the innermost planet).  
        
@@ -279,7 +312,7 @@ Simple plotting and analysis tools written in Python are available in `example_p
       ```
       $ python demcmc_quick_analyze.py INFILE.in [burnin]
       ``` 
-      where INFILE.in is the name of the .in input file for the run and burnin is an optional parameter which can be set to an integer N to disregard the first N steps when computing posterior information. Running this script produces a new directory called analysis_dir which is populated with:
+      where INFILE.in is the name of the .in input file for the run and burnin is an optional parameter which can be set to an integer N to disregard the first N steps when computing posterior information. Running this script produces a new subdirectory called analysis_dir which is populated with:
       
       * Trace plots for each parameter (format=.png)
       * Corner correlation plots for all parameters (format=.png)
