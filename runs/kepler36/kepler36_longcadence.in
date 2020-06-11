@@ -14,7 +14,7 @@ double epoch= 800.0
 // Number of individual demcmc walkers
 long nwalkers= 20
 // Number of generations the demcmc will run (i.e. the number of steps per walker)
-long nsteps= 1000
+long nsteps= 1001
 // Data cadence type switch. 0 = short cadence data, 1 = long cadence data, 2 = mixed
 int cadenceswitch= 1
 // File path and name for data
@@ -47,7 +47,7 @@ int massspectroscopy= 0
 1.153    0.028    0.038
 // Which limb darkening parameterization to use? (0 = Pal+2011 quadratic, 1 = Maxsted+2018 power2)
 // Note that the Maxsted+2018 does not properly handle mutual transit events (but is fine for simultaneous transits)
-int ldlaw= 1
+int ldlaw= 0
 // Restrict dilution from unresolved sources to be > 0.0 (1=yes, 0=no)
 int digt0= 1
 // Do you want to restrict inclination to > 90 rather than have bimodal distribution centered on 90 (0=no, 1=yes, 2=restrict to <90)
@@ -112,7 +112,7 @@ double t0= 50.0
 // Integration stop time (days)
 double t1= 1570.0 
 // Interval (in generations) at which to save state of chains
-int outputinterval= 100
+int outputinterval= 5
 // Pseudo random number generator seed
 int seed= 2
 // Amount to disperse starting guess (set to 0 to avoid dispersion)

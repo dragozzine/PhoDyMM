@@ -1,5 +1,18 @@
 #!/bin/bash
 
+
+#To restart a DEMCMC that has been stopped or crashed, the helper script `restart.sh` is included in the `example_planets/restart_script` directory.
+#After a DEMCMC is run for at least 100 generations (generating all necessary output files) copy it here and run:
+
+#$ ./restart.sh demcmc_runscript.sh kepler36_longcadence.in
+
+#will generate several restart files ending in `.res` (see the Optional Input section in README.md) and a script called demcmc_runscript.sh.res.sh,
+#which can be run to restart the MCMC from where it left off
+
+
+
+
+
 ## usage:$ ./restart.sh demcmc.sbatch kid009632895.in [rv1.txt] [rv2.txt]
 ##       $ sbatch demcmc.sbatch.res
 

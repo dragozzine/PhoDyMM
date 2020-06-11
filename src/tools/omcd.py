@@ -1,4 +1,8 @@
+print("STILL OMC, UPDATE TO OMCD")
+
 import numpy as np
+import matplotlib
+matplotlib.use('agg') # sets matplotlib backend so that no Xwindows is needed to save images
 import matplotlib.pyplot as plt
 import glob
 

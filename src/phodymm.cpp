@@ -1,5 +1,5 @@
-#define demcmc_compile 0
-#define celerite_compile 1
+#define demcmc_compile 1
+#define celerite_compile 0
 
 // This code written in C by Sean M Mills
 
