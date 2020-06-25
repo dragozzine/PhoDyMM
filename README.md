@@ -264,18 +264,20 @@ Note: Most of the output files append to existing files! instead of overwriting 
 
 2. Chain state
 
-   Every 100 generations, the current state of the chains is printed in the fitting basis to `demcmc_NAME.out`.  
+   Every 100 generations, the current state of the chains is printed in the fitting basis to `demcmc_NAME.out`. The spacing between these outputs can be changed in the input file. 
 
 3. Stepsize diagnostics
 
-   Every 10 generations, the fraction of new parameter proposals that are accepted and the current scale factor on the differential evolution vector used to propose new steps is printed. A file is generated with name `gamma_NAME.txt` and format:
+   Every 10 generations, the fraction of new parameter proposals that are accepted and the current scale factor on the differential evolution vector 
+used to propose new steps is printed. A file is generated with name `gamma_NAME.txt` and format:
    ```
    [generation] \t [proposal acceptance fraction] \t [scale factor]
    ```
 
 4. Diagnostic Output
 
-   Some diagnostic output is saved in `demcmc.stdout` and/or the `outf` subdirectory, depending on how the run is executed. If the run crashes or hangs, these are the best places to look for help.  
+   Some diagnostic output is saved in `demcmc.stdout` and/or the `outf` subdirectory, depending on how the run is executed. If the run crashes or 
+hangs, these are the best places to look for help.
  
 
 
