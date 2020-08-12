@@ -317,14 +317,14 @@ for i in range(npl):
 if npl > 4:
   fig, axes = plt.subplots(nrows=sum(divmod(npl, 2)), ncols=2, figsize=(6, 2*sum(divmod(npl,2))))
   for i in range(npl):
-    allparam.hist('M$_%s$' % alphabet[i], ax=axes[i/2, i % 2], normed=1)
+    allparam.hist('M$_%s$' % alphabet[i], ax=axes[i/2, i % 2], density=1)
   axes[sum(divmod(npl,2))-1,0].set_xlabel('M$_{Earth}$', fontsize=14)
   axes[npl/2-1,1].set_xlabel('M$_{Earth}$', fontsize=14)
   fig.savefig('analysis_dir/m_'+savestr+'.png')
 else:
   fig, axes = plt.subplots(nrows=npl, ncols=1, figsize=(6, 3*npl))
   for i in range(npl):
-    allparam.hist('M$_%s$' % alphabet[i], ax=axes[i], normed=1)
+    allparam.hist('M$_%s$' % alphabet[i], ax=axes[i], density=1)
   axes[npl-1].set_xlabel('M$_{Earth}$', fontsize=14)
   fig.savefig('analysis_dir/m_'+savestr+'.png')
 
@@ -339,7 +339,7 @@ for i in range(npl):
 if npl > 4:
   fig2, axes2 = plt.subplots(nrows=sum(divmod(npl, 2)), ncols=2, figsize=(6, 2*sum(divmod(npl,2))))
   for i in range(npl):
-    allparam.hist('R$_%s$' % alphabet[i], ax=axes2[i/2, i % 2], normed=1)
+    allparam.hist('R$_%s$' % alphabet[i], ax=axes2[i/2, i % 2], density=1)
   axes2[sum(divmod(npl,2))-1,0].set_xlabel('R$_{Earth}$', fontsize=14)
   axes2[npl/2-1,1].set_xlabel('R$_{Earth}$', fontsize=14)
   plt.tight_layout()
@@ -347,7 +347,7 @@ if npl > 4:
 else:
   fig2, axes2 = plt.subplots(nrows=npl, ncols=1, figsize=(6, 3*npl))
   for i in range(npl):
-    allparam.hist('R$_%s$' % alphabet[i], ax=axes2[i], normed=1)
+    allparam.hist('R$_%s$' % alphabet[i], ax=axes2[i], density=1)
   axes2[npl-1].set_xlabel('R$_{Earth}$', fontsize=14)
   plt.tight_layout()
   fig2.savefig('analysis_dir/r_'+savestr+'.png')
@@ -364,7 +364,7 @@ for i in range(npl):
 if npl>4:
   fig3, axes3 = plt.subplots(nrows=sum(divmod(npl, 2)), ncols=2, figsize=(6, 2*sum(divmod(npl,2))))
   for i in range(npl):
-    allparam.hist(r'$\rho$$_%s$' % alphabet[i], ax=axes3[i/2, i % 2], normed=1)
+    allparam.hist(r'$\rho$$_%s$' % alphabet[i], ax=axes3[i/2, i % 2], density=1)
   axes3[sum(divmod(npl,2))-1,0].set_xlabel('g cm$^{-3}$', fontsize=14)
   axes3[npl/2-1,1].set_xlabel('g cm$^{-3}$', fontsize=14)
   plt.tight_layout()
@@ -372,7 +372,7 @@ if npl>4:
 else:
   fig3, axes3 = plt.subplots(nrows=npl, ncols=1, figsize=(6, 3*npl))
   for i in range(npl):
-    allparam.hist(r'$\rho$$_%s$' % alphabet[i], ax=axes3[i], normed=1)
+    allparam.hist(r'$\rho$$_%s$' % alphabet[i], ax=axes3[i], density=1)
   axes3[npl-1].set_xlabel('g cm$^{-3}$', fontsize=14)
   plt.tight_layout()
   fig3.savefig('analysis_dir/rho_'+savestr+'.png')
@@ -380,6 +380,11 @@ else:
 # add eccentricity to allparam
 for i in range(npl):
   allparam['$e_%s$' % alphabet[i]] = allparam[r'$\sqrt{e}\cos \omega$$_%s$' % alphabet[i]]**2. + allparam[r'$\sqrt{e}\sin \omega$$_%s$' % alphabet[i]]**2.
+
+
+# TODO: add mutual inclinations to allparam
+
+
 
 
 # Lithwick et al. 2012 and others have shown that masses and eccentricities are often
@@ -409,10 +414,10 @@ figure3.savefig('analysis_dir/me_'+savestr+'.png')
 # Note that these are only correct approximations of the posterior distribution
 # if the Effective Sample Size is big enough to sample the tails of the 
 # distribution. In particular, the 3-sigma limits are unlikely to be accurate
-# if (ESS < ~1000), though it may still be useful to see the range of outputs.
+# if ESS < ~1000, though it may still be useful to see the range of outputs.
 
 # "fits_1sigma" gives median and 16-84 percentile credible interval (NOT Guassian)
-# "fits_3sigma" gives median and 0.13-99.86 percentile credible interval (NOT Guassian, likely inaccurate)
+# "fits_3sigma" gives median and 0.13-99.86 percentile credible interval (NOT Guassian, possibly inaccurate)
 # "fits_2sigmaUpperLimits" gives 95.4% upper limit on parameters 
 
 

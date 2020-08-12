@@ -5481,7 +5481,7 @@ int main (int argc, char *argv[]) {
 
   getinput(argv[1]);
   
-  void * nullptr;
+  void * nptr;
 
   int sofi = SOFI;
   RVARR = calloc(NBODIES, sofi);
@@ -5506,9 +5506,9 @@ int main (int argc, char *argv[]) {
   if (argc == 3) {
     RESTART = 0;
     if (RVS) {
-      demcmc(argv[2], nullptr, nullptr, nullptr); 
+      demcmc(argv[2], nptr, nptr, nptr); 
     } else {
-      demcmc(argv[2], nullptr, nullptr, nullptr); 
+      demcmc(argv[2], nptr, nptr, nptr); 
     }
   } else if (argc == 6) {
     RESTART = 1;
