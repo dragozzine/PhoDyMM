@@ -1,0 +1,9 @@
+planet         period (d)               T0 (d)                  e                   i (deg)                 Omega (deg)               omega(deg)               mp (mjup)              rpors           
+0.1	13.849852500000001	780.991559000000052	0.000000000000000	89.703399114161584	0.000000000000000	0.000000000000000	0.017540941747573	0.008429000000000
+0.2	16.231917010000000	786.417848000000049	0.000000000000000	89.547377639680619	0.000000000000000	0.000000000000000	0.024135514018692	0.020483000000000
+1.033000000000000 ; Mstar (M_sol)
+1.663000000000000 ; Rstar (R_sol)
+0.524800000000000 ; c1 (linear limb darkening)
+0.127200000000000 ; c2 (quadratic limb darkening)
+0.000000000000000 ; dilution (frac light not from stars in system)
+ ; Comments: Created from Jason Rowes table, some masses from NExScI. 
