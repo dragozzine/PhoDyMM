@@ -1,0 +1,186 @@
+// File must be in exactly this format.
+// Do not add or delete lines, comments, or spacing, except to expand array inputs.
+// Commented lines start with '//'. Do not remove or add commented or blank lines.
+// Variables are in pseudo C code with type defs and names as in the code.
+//
+// Frequently edited parameters
+//
+// Run name / identifier (must contain no spaces)
+string outstr= kepler36_longcadence
+// Number of bodies in the simulation (including all stars)
+int nbodies= 9
+// Epoch time of inputs
+double epoch= 800.0
+// Number of individual demcmc walkers
+long nwalkers= 100
+// Number of generations the demcmc will run (i.e. the number of steps per walker)
+long nsteps= 10001
+// Data cadence type switch. 0 = short cadence data, 1 = long cadence data, 2 = mixed
+int cadenceswitch= 2
+// File path and name for data
+string tfile= ./kplr011401755_1440_1a.txt 
+// Does the system have more than one star? 0=no, 1=yes
+// If yes (1), the following arrays should include the values in brackets, if no (0), omit them
+int multistar= 0
+// Should an RV jitter term be included for RV observations? If yes (1), then how many stars have RVs, and how many
+//  different telescopes (RV jitter + offset terms) should there be (per star)
+int rvjitterdata= 0 0 0
+// Is there TTV measurement and uncertainty files to read in along with the photometry? (1=yes, 0=no)
+// These files must be called ttv_[0-9].txt
+int ttvchisq= 0
+// Should a TTV jitter term be included? If yes (1), then how many stars have TTVs (should be 1) and how many data TTV 
+//   data sets are there per star (only 1 is allowed currently). Thus this line should be 0 0 0 (no jitter) or 1 1 1 (yes jitter).
+int ttvjitterdata= 0 0 0 
+// Should we use Celerite for the lightcurve? 1 = yes, 0 = no, if yes, 4 more free parameters must be specificed after all RV+TTV jitter terms
+//    These terms are lightcurve jitter, S0, w0, and Q as defined in the celerite paper.  
+int celerite= 0
+// Should we use Celerite for the RVs? 1 = yes, 0 = no, if yes, 4 more free parameters must be specificed after all RV+TTV jitter terms and LC celerite terms
+//    These terms are RV jitter, S0, w0, and Q as defined in the celerite paper. Don't also use RVJitter in this case 
+int rvcelerite= 0
+// Do you want to use a spectroscopic constraint on the stellar radius (1=yes, 0=no) -- NOTE: currently only works if multistar = 0
+// If yes, specify R_STAR (R_SUN), 1-sigma high, and 1-sigma low values. If no, this line is ignored (but must be present)
+int spectroscopy= 1
+1.335    0.034    0.026
+// Do you want to use a spectroscopic constraint on the stellar mass (1=yes, 0=no) -- NOTE: currently only works if multistar = 0
+// If yes, specify R_STAR (R_SUN), 1-sigma high, and 1-sigma low values. If no, this line is ignored (but must be present)
+int massspectroscopy= 1
+1.153    0.028    0.038
+// Which limb darkening parameterization to use? (0 = Pal+2011 quadratic, 1 = Maxsted+2018 power2)
+// Note that the Maxsted+2018 does not properly handle mutual transit events (but is fine for simultaneous transits)
+int ldlaw= 0
+int ldpriors= 1
+0.4	0.1	0.1
+0.27	0.1	0.1
+// Restrict dilution from unresolved sources to be > 0.0 (1=yes, 0=no)
+int digt0= 1
+// Do you want to restrict inclination to > 90 rather than have bimodal distribution centered on 90 (0=no, 1=yes, 2=restrict to <90)
+int igt90= 2
+// Do you want to impose a sin(i) prior on i to account for geometric effects (1=yes, 0=no)
+int incprior= 0
+// Restrict planet masses to positive values (1=yes, 0=no)
+int mgt0= 1
+// Do you want to use density cut offs. (1=yes, 0=no)
+// If yes, you must list the maximum allowed density (g/cm^3) you want for each planet, otherwise the line will be ignored (but must be present)
+int densitycuton= 1
+30 30 30 30 30 30 30 30
+// Do you wanto enforce a Gaussian mass ratio prior on the planets (1=yes, 0=no)
+// If yes, the following line specifies first the center of the prior for each planets, and the next the uncertainty (sigma) of the Gaussian
+// Thus each each line should have Nplanet entries, and both lines must be present even if a mass prior is not used (but will be ignored) 
+int massprior= 0
+0.0     0.0	0.0	0.0	0.0	0.0	0.0	0.0
+1e-5    1e-5	1e-5	1e-5	1e-5	1e-5	1e-5	1e-5
+// should the e vectors be e^(1/2)*cos/sin(w) (1) or e*sin/cos(w) (0)
+int sqrte= 1
+// Do you want to have e cut offs (1=yes, 0=no)
+// If yes, you must list the maximum allowed eccentricity you want for each planet, otherwise the line will be ignored (but must be present)
+int ecuton= 1
+1.0  1.0  1.0  1.0  1.0  1.0  1.0  1.0
+// Do you want to use a shaped prior on e (0=no, 1=rayleigh, 2=Gaussian)
+// If yes you must list the planets the prior is applied to (1=yes, 0=no), otherwise the line is ignored
+int eprior= 0
+0 0 0 0 0 0 0 0
+// What is the sigma parameter for the rayleigh/Gaussian distribution (this line is ignored if eprior = 0)
+double esigma= 0.05
+// Do you want to run a multi-temp DEMCMC? (0=no, if yes set this value to the number of temperature values to use) -- This is usually unused 
+int ntemps= 0
+// Array of flags indicating which paramters to be fixed. 0 = floating, 1 = fixed.
+// total elements should be pperplan*nplan+5 (five stellar params)
+// Format: int parfix= 
+// P_flag T0_flag ecosomega_flag esinomega_flag inclination_flag Omega_flag mass_flag rpors_flag [brightness_flag c1_flag c2_flag]
+// P_flag T0_flag ecosomega_flag esinomega_flag inclination_flag Omega_flag mass_flag rpors_flag [brightness_flag c1_flag c2_flag]
+// ...
+// P_flag T0_flag ecosomega_flag esinomega_flag inclination_flag Omega_flag mass_flag rpors_flag [brightness_flag c1_flag c2_flag]
+// Mstar_flag Rstar_flag c1_flag c2_flag [jitter flag(s)]
+int parfix=  
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0	0	0	0	1	0	0
+0	0       0       0	1        
+// Disperse chains equally between inc and 180-inc w/ opposite inclinations (1=yes 0=no)
+int splitincO= 0
+// Bimodal switch frequency 
+// This allows switching between two distinct bimodal parameters every nth step
+// Set to 0 to turn off
+int bimodf= 50
+// Array of which parameters are bimodal. 1 is to allow switches, 0 does not allow them
+// List must be in exact form of parfix, even if bimodf is set to 0
+int bimodlist=
+0	0	0	0	0	0	0	0       
+0	0	0	0	0	0	0	0
+0	0	0	0	0	0	0	0
+0	0	0	0	0	0	0	0
+0	0	0	0	0	0	0	0
+0	0	0	0	0	0	0	0
+0	0	0	0	0	0	0	0
+0	0	0	0	0	0	0	0
+0	0	0	0	0    
+//
+// Infrequently Edited Parameters
+//
+// Integration start time (days)
+double t0= 50.0
+// Integration stop time (days)
+double t1= 1570.0 
+// Stability check for crossing orbits (1 = check that orbits are not crossing and reject step if they are, 0 = do not enforce stability)
+int checkCrossing= 1
+// Integration error tolerance
+double dy= 1e-14
+// Interval (in generations) at which to save state of chains
+int outputinterval= 100
+// Pseudo random number generator seed
+int seed= 3
+// Amount to disperse starting guess (set to 0 to avoid dispersion)
+double disperse= 1.0
+// Optimal acceptance rate
+double optimal= 0.23
+// Percentatge by which scaling factor changes depending on whether acceptance rate is optimal
+double relax= 0.1
+// Number of data points to bin together to simulate integration time for long cadence data
+int nperbin= 15
+// Length (i.e. width) of a long cadence bin (days)
+double binwidth= 0.0204315
+// calculate the light time effect? 1=yes, 0=no 
+int lte= 1
+// Constants for how large of a buffer to give near transit events (may be necessary to adjust for high e planets)
+double offsetmult= 3.0
+double offsetmin= 3.0
+double offsetminout= 3.0
+double dist2divisor= 3.0
+// Time for lcout to print planet positions besides Tepoch 
+double printepoch= 850.0
+// Are any planet initial conditions given in (x y z vx vy vz) or any other non-standard style rather than orbital elements, 0=no, 1=yes,Jacobian, 2=yes,Stellar-Centric, 3=yes,Barycentric, 4=mcmcout form, 5=aei not pt0, 6=mean/true anomaly
+int xyzflag= 0
+// Which planet inputs are in x y z vx vy vz style (1 indicates xyz, 0 indicates orbital elements)
+int xyzlist= 0 0 0 0 0 0 0 0
+// Initial guess at step size for planet parameters
+// Format: double pstep= P_step T0_step ecosomega_step esinomega_step inclination_step Omega_step mass_step rpors_step [brightness_step c1_step c2_step]
+double pstep= 1e-7      1e-7   1e-6    1e-6    1e-5    1e-5    1e-5    1e-5
+// Initial guess at step size for stellar and noise parameters
+// Format: double sstep= Mstar_step Rstar_step c1_step c2_step dilute_step [jitter_step(s)] [celerite_steps]
+double sstep= 1e-7      1e-6    1e-6    1e-6    1e-8  
+// Flag for using custom step list. 0 = regular (default), 1 = custom (must set below)
+int stepflag= 0
+// Initial parameter step size list for custom step list
+// Format:
+// double cstep=
+// P_step T0_step ecosomega_step esinomega_step inclination_step Omega_step mass_step rpors_step [brightness_step c1_step c2_step]
+// P_step T0_step ecosomega_step esinomega_step inclination_step Omega_step mass_step rpors_step [brightness_step c1_step c2_step]
+// ...
+// P_step T0_step ecosomega_step esinomega_step inclination_step Omega_step mass_step rpors_step [brightness_step c1_step c2_step]
+// Mstar_step Rstar_step c1_step c2_step
+double cstep=
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-7  1e-7    1e-3    1e-3    1e-4    1e-2    1e-4   1e-6
+1e-4  1e-4    1e-4    1e-4    1e-4    
+//
