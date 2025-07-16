@@ -1,5 +1,5 @@
-#define demcmc_compile 1
-#define celerite_compile 1
+#define demcmc_compile 0
+#define celerite_compile 0
 
 // This code written in C by Sean M Mills
 // Very minor updates by Darin Ragozzine and his research group
@@ -43,6 +43,10 @@
 #include <gsl/gsl_randist.h>
 #include <float.h>
 #include <gsl/gsl_multimin.h>
+#include <iostream>
+#include <vector>
+#include <tuple>
+#include <algorithm>
 
 #if (celerite_compile == 1)
 // For CELERITE
@@ -67,6 +71,14 @@ int IGT90;
 int INCPRIOR;
 // Limb darkening (Pal+2011, or Maxsted+2018)
 int LDLAW;
+int LDPRIOR;
+double C1_CENTER;
+double C1_SIG_POS;
+double C1_SIG_NEG;
+double C2_CENTER;
+double C2_SIG_POS;
+double C2_SIG_NEG;
+double DY;
 // dilution capped?
 int DIGT0;
 // sqrt(e) as parameter?
@@ -147,6 +159,7 @@ char TFILE[1000];
 int *PARFIX;
 double T0;
 double T1;
+int CHECK_CROSSING;
 unsigned long OUTPUTINTERVAL;
 unsigned long SEED;
 double DISPERSE;
@@ -208,7 +221,7 @@ const int SOFIS = sizeof(int*);
 
 
 ///* Integration parameters */
-#define DY 1e-14                   ///* Error allowed in parameter values per timestep. */
+//#define DY 1e-14                   ///* Error allowed in parameter values per timestep. */
 #define HStart 1e-5                ///* Timestep to start.  If you get NaNs, try reducing this. */
 
 ///* Some physical constants */
@@ -246,7 +259,7 @@ int compare (const void* a, const void* b) {
 
 
 // set a 6*npl element vector equal to another 6*npl element vector
-int seteq (int npl, double ynew[], const double y[]) {
+void seteq (int npl, double ynew[], const double y[]) {
 
   int i;
   for(i=0;i<6*npl;i++) ynew[i]=y[i];
@@ -299,6 +312,73 @@ int func (double t, const double y[], double f[], void *params) {
 void *jac;
 
 
+// Helper for checking if orbits are crossing (future work may add additional stability checks)
+int check_orbits( double *p0local, long nw) {
+  int notallowed = 0;
+  const int npl = NPL;
+  const int pperwalker = PPERWALKER;
+  const int pperplan = PPERPLAN;  
+  double gravity = G; 
+  double mSunOvermJup = MSOMJ;
+  double rSunAU = RSUNAU;
+
+  std::vector<std::tuple<double,double>> semiMajor_ecc;
+
+  double mStar = p0local[nw*pperwalker + npl*pperplan];
+  double semiMaj;
+  double eSin;
+  double eCos;
+  double ecc;
+  double mass;
+  double period;
+
+  double rStar = p0local[nw*pperwalker + npl*pperplan + 1] * rSunAU;
+
+  for (int i = 0; i < npl; ++i) {
+    period = p0local[nw*pperwalker + i*pperplan + 0];
+    eSin = p0local[nw*pperwalker + i*pperplan + 2];
+    eCos = p0local[nw*pperwalker + i*pperplan + 3];
+    mass = p0local[nw*pperwalker + i*pperplan + 6];
+
+    mass = mass/mSunOvermJup;
+    ecc = pow(eSin,2) + pow(eCos,2);
+    semiMaj = pow((gravity * pow(period,2) * (mass + mStar))/(4 * pow(M_PI,2)),1.0/3.0);
+    
+    semiMajor_ecc.push_back(std::make_tuple(semiMaj,ecc));
+  }
+  std::sort(semiMajor_ecc.begin(), semiMajor_ecc.end());
+
+  double semiI;
+  double semiIp1;
+  double eccI;
+  double eccIp1;
+  double apoI;
+  double periI;
+  double periIp1;
+  
+  for (int i = 0; i < npl - 1; ++i) {
+    semiI = std::get<0>(semiMajor_ecc[i]);
+    semiIp1 = std::get<0>(semiMajor_ecc[i+1]);
+    eccI = std::get<1>(semiMajor_ecc[i]);
+    eccIp1 = std::get<1>(semiMajor_ecc[i+1]);
+
+    apoI = semiI * (1 + eccI);
+    periI = semiI * (1 - eccI);
+    periIp1 = semiIp1 * (1 - eccIp1);
+
+    if (i == 0 && periI <= rStar) {
+      notallowed = 1;
+    }
+
+    if (apoI >= periIp1) {
+      notallowed = 1;
+    }
+  }
+  
+  
+  return notallowed;
+}
+
 
 
 // Helper for checking if certain parameters are out of 
@@ -328,6 +408,7 @@ int check_boundaries( double *p0local, long nw) {
       double radcm = p0local[nw*pperwalker+npl*pperplan+1] * p0local[nw*pperwalker+ip*pperplan+7] * RSUNCM;
       double rhogcc = massg / (4./3.*M_PI*radcm*radcm*radcm);
       if (rhogcc > MAXDENSITY[ip]) notallowed=1;
+      if (rhogcc < 0.01) notallowed = 1;
     }
     // make sure radius ratios are positive
     if (p0local[nw*pperwalker+ip*pperplan+7] < 0.0) notallowed=1;
@@ -413,6 +494,11 @@ double compute_priors(double *p0local, int i) {
     double* evector; 
     evector = malloc(npl*sofd);
 
+    double c1;
+    double c2;
+    c1 = p0local[i*pperwalker+npl*pperplan+2];
+    c2 = p0local[i*pperwalker+npl*pperplan+3];
+
     if (EPRIOR) {
       if (SQRTE) {
         int i0;
@@ -458,6 +544,28 @@ double compute_priors(double *p0local, int i) {
       }
       else {
         neg2logliketemp += pow( (photoradius - SPECRADIUS) / SPECERRNEG, 2 );
+      }
+    }
+
+    if (LDPRIOR) {
+      double normalization1 = 1./(sqrt(2.*M_PI));
+      normalization1 *= 2./(C1_SIG_POS+C1_SIG_NEG); // normalized asymmetric Gaussian
+      neg2logliketemp += -2.*log(normalization1);
+      if (c1 > C1_CENTER) {
+        neg2logliketemp += pow( (c1 - C1_CENTER) / C1_SIG_POS, 2 );
+      }
+      else {
+        neg2logliketemp += pow( (c1 - C1_CENTER) / C1_SIG_NEG, 2 );
+      }
+
+      double normalization2 = 1./(sqrt(2.*M_PI));
+      normalization2 *= 2./(C2_SIG_POS+C2_SIG_NEG); // normalized asymmetric Gaussian
+      neg2logliketemp += -2.*log(normalization2);
+      if (c2 > C2_CENTER) {
+        neg2logliketemp += pow( (c2 - C2_CENTER) / C2_SIG_POS, 2 );
+      }
+      else {
+        neg2logliketemp += pow( (c2 - C2_CENTER) / C2_SIG_NEG, 2 );
       }
     }
 
@@ -621,7 +729,9 @@ double celerite_fit(double*** flux_rvs, double* p0local, int i, int rvflag, int 
 #endif 
 #if (celerite_compile == 0)
 // dummy function if celerite is not used to compile the code 
-double celerite_fit(double*** flux_rvs, double* p0local, int i, int rvflag, int verbose) {} 
+double celerite_fit(double*** flux_rvs, double* p0local, int i, int rvflag, int verbose) {
+   return 0;
+} 
 #endif
  
 
@@ -733,7 +843,7 @@ double ***dpintegrator_single (double ***int_in, double **tfe, double **tve, dou
 
   int k;
 
-  long maxtransits = 10000;
+  long maxtransits = 100000;
   int toomany=0;
   int ntarrelem = 6;
   double *transitarr = malloc((maxtransits+1)*ntarrelem*sofd);
@@ -1905,6 +2015,11 @@ int getinput(char fname[]) {
     printf("Error: ldlaw must be 0 or 1\n");
     exit(0);
   }
+
+  fscanf(inputf, "%s %s %i", type, varname, &LDPRIOR); fgets(buffer, 1000, inputf); 
+  fscanf(inputf, "%lf %lf %lf", &C1_CENTER, &C1_SIG_POS, &C1_SIG_NEG); fgets(buffer, 1000, inputf);
+  fscanf(inputf, "%lf %lf %lf", &C2_CENTER, &C2_SIG_POS, &C2_SIG_NEG); fgets(buffer, 1000, inputf);
+
   fgets(buffer, 1000, inputf); 
   fscanf(inputf, "%s %s %i", type, varname, &DIGT0); fgets(buffer, 1000, inputf); 
   fgets(buffer, 1000, inputf);
@@ -2044,7 +2159,15 @@ int getinput(char fname[]) {
   printf("t0 = %lf\n", T0);
   fgets(buffer, 1000, inputf);
   fscanf(inputf, "%s %s %lf", type, varname, &T1); fgets(buffer, 1000, inputf); 
+
+//Read in whether to check for crossing orbits
+//Read in integration error tolerance
   fgets(buffer, 1000, inputf);
+  fscanf(inputf, "%s %s %i", type, varname, &CHECK_CROSSING); fgets(buffer, 1000, inputf);
+  fgets(buffer, 1000, inputf);
+  fscanf(inputf, "%s %s %lf", type, varname, &DY); fgets(buffer, 1000, inputf);
+  fgets(buffer, 1000, inputf);
+  
   printf("t1 = %lf\n", T1);
   if (T1 <= T0 || EPOCH < T0 || EPOCH > T1) {
     printf("t0 = %lf, epoch=%lf, t1=%lf\n", T0, EPOCH, T1);
@@ -4052,6 +4175,13 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
         fluxlist = realloc(fluxlist, timelistlen*sofd);
         cadencelist = realloc(cadencelist, timelistlen*sofi);
         errlist = realloc(errlist, timelistlen*sofd);
+
+        if (cadencelist[kk] != 0 and cadencelist[kk] != 1) {
+          sout = fopen("demcmc.stdout", "a");
+          fprintf(sout, "Lightcurve file missing cadence type\n");
+          fclose(sout);
+          exit(0);
+        }
         
         if (timelist==NULL) {
           sout = fopen("demcmc.stdout", "a");
@@ -4306,12 +4436,17 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
       for (i=0; i<(1+npl+pstar+1); i++) {
         fgets(garbage, 10000, rebsqf);
       }
-      char cgarbage;
-      for (i=0; i<11; i++) {
-        cgarbage = fgetc(rebsqf);
-      }
+      //char cgarbage;
+      //for (i=0; i<11; i++) {
+      //  cgarbage = fgetc(rebsqf);
+      //  printf(cgarbage);
+      //}
+
       double reneg2loglikemin;
-      fscanf(rebsqf, "%lf", &reneg2loglikemin);
+      char junk1[1000];
+      char junk2[1000];
+      char junk3[1000];
+      fscanf(rebsqf, "%s %s %s %lf", &junk1, &junk2, &junk3, &reneg2loglikemin);
       fclose(rebsqf);
       neg2loglikemin = reneg2loglikemin;
      
@@ -4972,6 +5107,80 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
   unsigned long nwalkersul = (unsigned long) nwalkers;
   gsl_rng_set(rnw, seed*(nwcore+2));
 
+  // Begin reading in transformation matrix from csv files
+  const int maxSize = 100;
+  double transform[maxSize][maxSize];
+  double in_transform[maxSize][maxSize];
+  double means[maxSize];
+  double temp;
+  char com;
+  char transform_fname[30] = "transformation.csv";
+  char inverse_fname[30] = "inverse_transformation.csv";
+  char means_fname[20] = "means.csv";
+
+  try {
+      FILE* transform_file = fopen(transform_fname, "r");
+      if (transform_file == NULL) {
+          throw - 1;
+      }
+      for (int i = 0; i < pperwalker; i++) {
+          for (int j = 0; j < pperwalker; j++) {
+              fscanf(transform_file, "%lf", &temp);
+              fscanf(transform_file, "%c", &com);
+              transform[i][j] = temp;
+          }
+      }
+      FILE* in_trans_file = fopen(inverse_fname, "r");
+      if (in_trans_file == NULL) {
+          throw - 1;
+      }
+      for (int i = 0; i < pperwalker; i++) {
+          for (int j = 0; j < pperwalker; j++) {
+              fscanf(in_trans_file, "%lf", &temp);
+              fscanf(in_trans_file, "%c", &com);
+              in_transform[i][j] = temp;
+          }
+      }
+      FILE* means_file = fopen(means_fname, "r");
+
+      if (means_file == NULL) {
+          throw - 1;
+      }
+      for (int i = 0; i < pperwalker; i++) {
+          fscanf(means_file, "%lf", &temp);
+          fscanf(means_file, "%c", &com);
+          means[i] = temp;
+      }
+  }
+  catch (int e) {
+      std::cout << "File name error" << std::endl;
+
+      for (int i = 0; i < pperwalker; ++i) {
+          for (int j = 0; j < pperwalker; ++j) {
+              if (i == j) {
+                  transform[i][j] = 1;
+                  in_transform[i][j] = 1;
+              }
+              else {
+                  transform[i][j] = 0;
+                  in_transform[i][j] = 0;
+              }
+          }
+          means[i] = 0;
+      }
+  }
+
+  double nw_copy[pperwalker];
+  double nw_copy_t[pperwalker];
+  double nw_copy_inT[pperwalker];
+  double nw1_copy[pperwalker];
+  double nw2_copy[pperwalker];
+  double nw1_trans[pperwalker];
+  double nw2_trans[pperwalker];
+  double temp_nw;
+  double temp1;
+  double temp2;
+
   while (jj<nsteps) {
  
     if (RANK==0 && jj % 10 == 0) {
@@ -5006,11 +5215,10 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
     unsigned long nw;
     long nwinit=nwcore*npercore;
     long nwfin=(nwcore+1)*npercore;
+
     // This loops allows you to have more walkers than cores
     for (nw=nwinit; nw < nwfin; nw++) {
-
       memcpy(p0localcopy, &p0local[nw*pperwalker], pperwalker*sofd);
-
       acceptance[nw] = 1;
   
       unsigned long nw1;
@@ -5018,35 +5226,110 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
       unsigned long nw2;
       do nw2 = gsl_rng_uniform_int(rnw, nwalkersul); while (nw2 == nw || nw2 == nw1); 
   
-      int notallowed=0;
-  
+      //Copy selected walkers 
+
+      for (int copy_index = 0; copy_index < pperwalker; ++copy_index) {
+        nw_copy[copy_index] = p0local[nw*pperwalker + copy_index];
+        nw1_copy[copy_index] = p0local[nw1*pperwalker + copy_index];
+        nw2_copy[copy_index] = p0local[nw2*pperwalker + copy_index];
+      }
+
+      //Transform selected walkers
+      for (int rIn = 0; rIn < pperwalker; ++rIn) {
+        temp_nw = 0;
+        temp1 = 0;
+        temp2 = 0;
+
+        for (int cIn = 0; cIn < pperwalker; ++cIn) {
+            temp_nw = temp_nw + transform[rIn][cIn] * (nw_copy[cIn] - means[cIn]);
+            temp1 = temp1 + transform[rIn][cIn] * (nw1_copy[cIn] - means[cIn]);
+            temp2 = temp2 + transform[rIn][cIn] * (nw2_copy[cIn] - means[cIn]);
+
+        }
+        nw_copy_t[rIn] = temp_nw;
+        nw1_trans[rIn] = temp1;
+        nw2_trans[rIn] = temp2;
+      }
+
+      //Take step and save in transformed array
+
       int ip;
       if (bimodf && jj % bimodf == 0) {
-        for (ip=0; ip<pstar; ip++) {
-          p0local[nw*pperwalker+npl*pperplan+ip] += (gamma+(1-gamma)*bimodlist[npl*pperplan+ip])*(p0local[nw1*pperwalker+npl*pperplan+ip]-p0local[nw2*pperwalker+npl*pperplan+ip])*(1-parfix[npl*pperplan+ip])*(1+(1+(gamma-1)*bimodlist[npl*pperplan+ip])*gsl_ran_gaussian(rnw, 0.1));
+        for (ip = 0; ip < pstar; ip++) {
+          nw_copy_t[npl * pperplan + ip] += (gamma + (1 - gamma) * bimodlist[npl * pperplan + ip]) * (nw1_trans[npl * pperplan + ip] - nw2_trans[npl * pperplan + ip]) * (1 - parfix[npl * pperplan + ip]) * (1 + (1 + (gamma - 1) * bimodlist[npl * pperplan + ip]) * gsl_ran_gaussian(rnw, 0.1));
         }
-        for (ip=0; ip<npl; ip++) {
+        for (ip = 0; ip < npl; ip++) {
           int ii;
-          for (ii=0; ii<pperplan; ii++) {
-            p0local[nw*pperwalker+ip*pperplan+ii] += (gamma+(1-gamma)*bimodlist[ip*pperplan+ii])*(p0local[nw1*pperwalker+ip*pperplan+ii]-p0local[nw2*pperwalker+ip*pperplan+ii])*(1-parfix[ip*pperplan+ii])*(1+(1+(gamma-1)*bimodlist[ip*pperplan+ii])*gsl_ran_gaussian(rnw, 0.1));
+          for (ii = 0; ii < pperplan; ii++) {
+            nw_copy_t[ip * pperplan + ii] += (gamma + (1 - gamma) * bimodlist[ip * pperplan + ii]) * (nw1_trans[ip * pperplan + ii] - nw2_trans[ip * pperplan + ii]) * (1 - parfix[ip * pperplan + ii]) * (1 + (1 + (gamma - 1) * bimodlist[ip * pperplan + ii]) * gsl_ran_gaussian(rnw, 0.1));
           }
-        } 
-      } else {
-        for (ip=0; ip<pstar; ip++) {
-          p0local[nw*pperwalker+npl*pperplan+ip] += gamma*(p0local[nw1*pperwalker+npl*pperplan+ip]-p0local[nw2*pperwalker+npl*pperplan+ip])*(1-parfix[npl*pperplan+ip])*(1+gsl_ran_gaussian(rnw, 0.1));
         }
-        for (ip=0; ip<npl; ip++) {
+      }else {
+        for (ip = 0; ip < pstar; ip++) {
+          nw_copy_t[npl * pperplan + ip] += gamma * (nw1_trans[npl * pperplan + ip] - nw2_trans[npl * pperplan + ip]) * (1 - parfix[npl * pperplan + ip]) * (1 + gsl_ran_gaussian(rnw, 0.1));
+        }
+        for (ip = 0; ip < npl; ip++) {
           int ii;
-          for (ii=0; ii<pperplan; ii++) {
-            p0local[nw*pperwalker+ip*pperplan+ii] += gamma*(p0local[nw1*pperwalker+ip*pperplan+ii]-p0local[nw2*pperwalker+ip*pperplan+ii])*(1-parfix[ip*pperplan+ii])*(1+gsl_ran_gaussian(rnw, 0.1));
+          for (ii = 0; ii < pperplan; ii++) {
+            nw_copy_t[ip * pperplan + ii] += gamma * (nw1_trans[ip * pperplan + ii] - nw2_trans[ip * pperplan + ii]) * (1 - parfix[ip * pperplan + ii]) * (1 + gsl_ran_gaussian(rnw, 0.1));
           }
-        } 
+        }
       }
-     
+
+      //Inverse transform and save in in_transformed array
+
+      for (int rIn = 0; rIn < pperwalker; ++rIn) {
+        temp1 = 0;
+        for (int cIn = 0; cIn < pperwalker; ++cIn) {
+          temp1 = temp1 + in_transform[rIn][cIn] * nw_copy_t[cIn];
+
+        }
+        nw_copy_inT[rIn] = temp1 + means[rIn];
+      }
+
+      //Save new values in p0local
+
+      for (int rIn = 0; rIn < pperwalker; ++rIn) {
+        p0local[nw*pperwalker + rIn] = nw_copy_inT[rIn];
+      }
+
+//      int ip;
+//      if (bimodf && jj % bimodf == 0) {
+//        for (ip=0; ip<pstar; ip++) {
+//          p0local[nw*pperwalker+npl*pperplan+ip] += (gamma+(1-gamma)*bimodlist[npl*pperplan+ip])*(p0local[nw1*pperwalker+npl*pperplan+ip]-p0local[nw2*pperwalker+npl*pperplan+ip])*(1-parfix[npl*pperplan+ip])*(1+(1+(gamma-1)*bimodlist[npl*pperplan+ip])*gsl_ran_gaussian(rnw, 0.1));
+//        }
+//        for (ip=0; ip<npl; ip++) {
+//          int ii;
+//          for (ii=0; ii<pperplan; ii++) {
+//            p0local[nw*pperwalker+ip*pperplan+ii] += (gamma+(1-gamma)*bimodlist[ip*pperplan+ii])*(p0local[nw1*pperwalker+ip*pperplan+ii]-p0local[nw2*pperwalker+ip*pperplan+ii])*(1-parfix[ip*pperplan+ii])*(1+(1+(gamma-1)*bimodlist[ip*pperplan+ii])*gsl_ran_gaussian(rnw, 0.1));
+//          }
+//        } 
+//      } else {
+//        for (ip=0; ip<pstar; ip++) {
+//          p0local[nw*pperwalker+npl*pperplan+ip] += gamma*(p0local[nw1*pperwalker+npl*pperplan+ip]-p0local[nw2*pperwalker+npl*pperplan+ip])*(1-parfix[npl*pperplan+ip])*(1+gsl_ran_gaussian(rnw, 0.1));
+//        }
+//        for (ip=0; ip<npl; ip++) {
+//          int ii;
+//          for (ii=0; ii<pperplan; ii++) {
+//            p0local[nw*pperwalker+ip*pperplan+ii] += gamma*(p0local[nw1*pperwalker+ip*pperplan+ii]-p0local[nw2*pperwalker+ip*pperplan+ii])*(1-parfix[ip*pperplan+ii])*(1+gsl_ran_gaussian(rnw, 0.1));
+//          }
+//        } 
+//      }
+   
+      int notallowed=0;
       // Check for chains that have strayed past any hard boundaries. 
       // No need to integrate any of these.  
       notallowed += check_boundaries(p0local, nw); 
- 
+
+
+// Check that orbits are not crossing, if crossing orbits then notallowed = 1
+// Need to get eccentricities and semi major axes, sort them and check for crossing orbits
+// Ultimately need mStar, periods, masses, eccentricities
+
+      if (CHECK_CROSSING  && !notallowed) {
+        notallowed = check_orbits(p0local,nw);
+      }
+      
       if (notallowed) { 
           
         acceptance[nw] = 0;
@@ -5172,10 +5455,10 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
   
       }
       //free(evector);
-  
       // switch back to old ones if not accepted
       if (acceptance[nw] == 0) {
         memcpy(&p0local[nw*pperwalker], p0localcopy, pperwalker*sofd);
+
       }
 
     }
@@ -5214,17 +5497,23 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
       for (nwdex=0; nwdex<nwalkers; nwdex++) naccept += acceptance[nwdex];
 
       double fracaccept = 1.0*naccept/nwalkers;
-      if (fracaccept >= optimal) {
+      if (fracaccept >= (optimal + 0.1)) {
         gamma *= (1+relax);
-      } else {
-        gamma *= (1-relax);
+      } 
+      if (fracaccept <= (optimal - 0.1)) {
+        gamma /= (1+relax);
+
+      if (gamma <= 0.03) {
+        gamma = 0.03;
+      }
+
       }
 
       char gammafstr[80];
       strcpy(gammafstr, "gamma_");
       strcat(gammafstr, OUTSTR);
       strcat(gammafstr, ".txt");
-      if (jj % 10 == 0) {
+      if (jj % OUTPUTINTERVAL == 0) {
         FILE *gammaf = fopen(gammafstr, "a");
         fprintf(gammaf, "%li\t%lf\t%lf\n", jj, fracaccept, gamma);
         fclose(gammaf);
@@ -5358,7 +5647,7 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
 
     MPI_Bcast(&gamma, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-    if ((RANK==0) && (jj % 10 == 0 )) {
+    if ((RANK==0) && (jj % OUTPUTINTERVAL == 0 )) {
       //time testing
       clock_gettime(CLOCK_MONOTONIC, &finish);
 
@@ -5376,10 +5665,10 @@ int demcmc(char aei[], char chainres[], char bsqres[], char gres[]) {
 
   free(acceptance);
   free(acceptanceglobal);
-  free(p0local);
-  free(p0global);
-  free(p0localcopy);
-  free(neg2loglike0global);
+  //free(p0local);
+  //free(p0global);
+  //free(p0localcopy);
+  //free(neg2loglike0global);
 
 
   for(i=0; i<nwalkers; i++) {
