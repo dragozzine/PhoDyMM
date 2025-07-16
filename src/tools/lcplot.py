@@ -45,7 +45,7 @@ def plotlc(time, meas, the, err, trange, outputname=None, autoadjust=True):
   i=0 
   for fname in glob.glob("./tbv[0-9][0-9]_[0-9][0-9].out"):
     i+=1
-    data = np.loadtxt(fname)
+    data = np.loadtxt(fname,ndmin=2)
     tt = data[:,1]
     for tti in tt:
       a0.plot([tti, tti], [ylim-0.05*yspan, ylim], c=colorlist[i], marker="None") 
