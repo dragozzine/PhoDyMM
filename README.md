@@ -82,17 +82,24 @@ git clone https://github.com/dragozzine/PhoDyMM.git
 
 2. Go into the src directory and compile lcout and demcmc
 
-3. Go into the runs/Kepler-36 directory, designed for initial testing 
+3. Go into the runs/koi0277 directory, designed for initial testing
+   
+4. Run ``` sed -i 's/\r$//' lightcurve_runscript.sh demcmc_runscript.sh restart.sh ``` to temporarily fix Windows (CRLF) line endings or a bad shebang
+  
+5. Run ``` chmod u+x lightcurve_runscript.sh demcmc_runscript.sh restart.sh ``` to make the script executable
 
-4. Examine the lightcurve model using this script: ``` ./lightcurve_runscript.sh ``` This should take a few seconds, generate diagnostic output, and 
+6. Copy the best_parameters.pldin file from hdd2/backup/danielkj/PhoDyMM_cleaned_full/completed_systems to ~\PhoDyMM/runs/koi0277
+   
+7. Create a new folder called analysis_dir in the runs/koi0277 directory: ``` mkdir analysis_dir ```
+  
+8. Examine the lightcurve model using this script: ``` ./lightcurve_runscript.sh ``` This should take a few seconds, generate diagnostic output, and 
 produce multiple output figures. These figures should be compared to the figures in Ragozzine et al. 2020 (or in the /docs directory)
 
-5. Do a short test DEMCMC run using this script:
+9. Do a short test DEMCMC run using this script:
 ```
 ./demcmc_runscript.sh
 ```
 You can observe the progress of this DEMCMC run using ```tail demcmc.stdout```.
-
 ## Appendix
 
 
