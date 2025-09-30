@@ -60,7 +60,7 @@ or, if you are not using celerite, on line 2 set:
 ```#define celerite_compile 0```
 and then compile with:
 ```
-$ mpic++ -w -Ofast -o demcmc -lm -lgsl -lgslcblas -lmpi -fpermissive phodymm.cpp
+$ mpic++ -Ofast -w phodymm.cpp -o demcmc -lgsl -lgslcblas -lm -lmpi -fpermissive
 ```
 
 This will create an executable called `demcmc` which can be used to run a differential evolution MCMC (DEMCMC). 
