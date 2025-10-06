@@ -80,7 +80,7 @@ Here are some step-by-step instructions for novice users that also function as a
 git clone https://github.com/dragozzine/PhoDyMM.git
 ```
 
-2. Go into the src directory and compile lcout and demcmc
+2. Go into the src directory and compile lcout and demcmc (The compilation steps described above)
 
 3. Go into the runs/koi0277 directory, designed for initial testing
    
