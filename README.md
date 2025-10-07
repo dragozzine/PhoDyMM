@@ -100,6 +100,7 @@ produce multiple output figures. These figures should be compared to the figures
 ./demcmc_runscript.sh
 ```
 You can observe the progress of this DEMCMC run using ```tail demcmc.stdout```.
+
 10. Finally, you can run ``` python demcmc_quick_analyze.py koi0277_cadence.in 0 True ```. You can replace 0 with any burn-in value you'd like.
 ## Appendix
 
