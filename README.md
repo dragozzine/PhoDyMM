@@ -23,7 +23,7 @@ If you are using the demcmc rather than just running the forward model, it also 
 
   3. celerite (https://github.com/dfm/celerite) 
 
-## Running the model
+## Running the model (Outdated, please follow the Step-by-step instructions below)
 
 After those are installed, you may compile PhoDyMM from source file src/phodymm.cpp using:
 ```
@@ -45,7 +45,7 @@ You may use it to run a forward N-body model given a data file, input file (*.in
 The output will be a theoretical lightcurve (in *.lcout) and list of transit times (in tbv*.out for each planet). These files are described below.
 For an example, see the readme.txt in `runs/Kepler-36`
 
-## Fitting to Data to Generate Posteriors
+## Fitting to Data to Generate Posteriors (Outdated, please follow the Step-by-step instructions below)
 
 To run a demcmc, you must change the first line in phodymm.c from
 ```#define demcmc_compile 0```
@@ -71,22 +71,22 @@ It is recommended you run the demcmc executable on a computing cluster. Some exa
 `runs/Kepler-36`
 Input and output files are discussed below. For more details look at the readme.txt in that folder.  
 
-## Step-by-step Instructions
+## Step-by-step Instructions (Please ignore compilation steps above; those are outdated)
 
-Here are some step-by-step instructions for novice users that also function as a test case. 
+Here are some (most up-to-date) step-by-step instructions for novice users that also function as a test case. 
 
 1. Clone this repository to your local machine using
 ``` 
 git clone https://github.com/dragozzine/PhoDyMM.git
 ```
 
-2. Go into the src directory and compile lcout and demcmc (The compilation steps described above)
+2. Go into the src directory and compile lcout and demcmc by running  ``` ./compilescript.sh ```
 
-3. Go into the runs/koi0277 directory, designed for initial testing
+3. Go into the systems directory (e.g., PhoDyMM/runs/koi0277), designed for initial testing
    
-4. Run ``` sed -i 's/\r$//' lightcurve_runscript.sh demcmc_runscript.sh restart.sh ``` to temporarily fix Windows (CRLF) line endings or a bad shebang
+4. Run ``` sed -i 's/\r$//' lightcurve_runscript.sh demcmc_runscript.sh restart.sh ``` to temporarily fix Windows (CRLF) line endings or a bad shebang (Might not be necessary)
   
-5. Run ``` chmod u+x lightcurve_runscript.sh demcmc_runscript.sh restart.sh ``` to make the script executable
+5. Run ``` chmod u+x lightcurve_runscript.sh demcmc_runscript.sh restart.sh ``` to make the script executable (Might not be necessary)
 
 6. Copy the best_parameters.pldin file from hdd2/backup/danielkj/PhoDyMM_cleaned_full/completed_systems to ~\PhoDyMM/runs/koi0277
    
